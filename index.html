@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Органайзер дел и покупок</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Темы оформления */
+        .theme-light {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+        }
+
+        .theme-dark {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --accent-color: #3b82f6;
+            --accent-hover: #60a5fa;
+        }
+
+        .theme-pastel {
+            --bg-main: #fef2f2;
+            --bg-card: #fff1f2;
+            --text-main: #881337;
+            --text-muted: #9f1239;
+            --border-color: #fecdd3;
+            --accent-color: #f43f5e;
+            --accent-hover: #e11d48;
+        }
+
+        .theme-cyberpunk {
+            --bg-main: #09090b;
+            --bg-card: #18181b;
+            --text-main: #facc15;
+            --text-muted: #a1a1aa;
+            --border-color: #27272a;
+            --accent-color: #06b6d4;
+            --accent-hover: #22d3ee;
+        }
+
+        .theme-minimal {
+            --bg-main: #ffffff;
+            --bg-card: #fafafa;
+            --text-main: #18181b;
+            --text-muted: #71717a;
+            --border-color: #f4f4f5;
+            --accent-color: #18181b;
+            --accent-hover: #3f3f46;
+        }
+
+        /* Применение динамических CSS переменных */
+        .app-bg { background-color: var(--bg-main); }
+        .app-card { background-color: var(--bg-card); border-color: var(--border-color); }
+        .app-text { color: var(--text-main); }
+        .app-text-muted { color: var(--text-muted); }
+        .app-border { border-color: var(--border-color); }
+        .app-btn-primary { 
+            background-color: var(--accent-color); 
+            color: #ffffff; 
+        }
+        .app-btn-primary:hover { 
+            background-color: var(--accent-hover); 
+        }
+        .app-accent-text { color: var(--accent-color); }
+
+        /* Размеры шрифта */
+        .fs-sm { font-size: 0.875rem; }
+        .fs-md { font-size: 1rem; }
+        .fs-lg { font-size: 1.125rem; }
+        .fs-xl { font-size: 1.25rem; }
+
+        /* Кастомный чекбокс */
+        .custom-checkbox {
+            appearance: none;
+            width: 1.25em;
+            height: 1.25em;
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .custom-checkbox:checked {
+            background-color: var(--accent-color);
+        }
+        .custom-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 0.8em;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+
+        /* Зачеркивание для выполненных элементов */
+        .completed-item {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body id="app-body" class="theme-light fs-md app-bg app-text min-h-full flex flex-col transition-all">
+
+    <!-- Главная обертка -->
+    <div id="app-container" class="w-full max-w-6xl mx-auto p-4 md:p-6 flex-grow flex flex-col gap-6">
+        
+        <!-- Шапка приложения -->
+        <header class="flex justify-between items-center pb-4 border-b app-border">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-list-check text-2xl app-accent-text"></i>
+                <h1 class="text-xl md:text-2xl font-bold tracking-tight">Мой Органайзер</h1>
+            </div>
+            <button id="open-settings-btn" class="p-2.5 rounded-lg app-card border hover:opacity-80 transition" title="Настройки оформления">
+                <i class="fa-solid fa-palette text-lg"></i>
+            </button>
+        </header>
+
+        <!-- Основная сетка -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow">
+            
+            <!-- Боковая панель разделов -->
+            <aside class="md:col-span-4 lg:col-span-3 flex flex-col gap-4">
+                <div class="app-card border rounded-xl p-4 shadow-sm flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-semibold uppercase tracking-wider text-xs app-text-muted">Разделы</h2>
+                        <span id="sections-count" class="text-xs font-bold px-2 py-0.5 rounded-full app-bg app-text">0</span>
+                    </div>
+
+                    <!-- Форма добавления раздела -->
+                    <form id="add-section-form" class="flex gap-2">
+                        <input type="text" id="new-section-input" placeholder="Новый раздел..." required
+                            class="w-full px-3 py-2 rounded-lg border app-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="submit" class="app-btn-primary px-3 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </form>
+
+                    <!-- Список разделов -->
+                    <ul id="sections-list" class="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+                        <!-- Разделы рендерятся динамически -->
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Основная область текущего раздела -->
+            <main class="md:col-span-8 lg:col-span-9 flex flex-col gap-4">
+                <div id="active-section-card" class="app-card border rounded-xl p-5 shadow-sm flex flex-col flex-grow gap-4">
+                    
+                    <!-- Шапка текущего раздела -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b app-border">
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <h2 id="current-section-title" class="text-lg font-bold">Выберите раздел</h2>
+                            <button id="edit-section-btn" class="text-xs app-text-muted hover:app-text p-1 hidden" title="Переименовать раздел">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+
+                        <!-- Фильтры отображения -->
+                        <div id="filter-controls" class="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg text-xs w-full sm:w-auto justify-center">
+                            <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-md font-medium transition active-filter app-card">Все</button>
+                            <button data-filter="active" class="filter-btn px-3 py-1.5 rounded-md font-medium transition">Активные</button>
+                            <button data-filter="completed" class="filter-btn px-3 py-1.5 rounded-md font-medium transition">Завершённые</button>
+                        </div>
+                    </div>
+
+                    <!-- Форма добавления элемента в текущий раздел -->
+                    <form id="add-task-form" class="flex gap-2">
+                        <input type="text" id="new-task-input" placeholder="Добавить дело или покупку..." required disabled
+                            class="w-full px-4 py-2.5 rounded-lg border app-border bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+                        <button type="submit" id="add-task-btn" disabled class="app-btn-primary px-5 py-2.5 rounded-lg font-medium transition flex items-center justify-center disabled:opacity-50">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </form>
+
+                    <!-- Список элементов -->
+                    <div class="flex-grow min-h-[250px] relative">
+                        <ul id="tasks-list" class="space-y-2">
+                            <!-- Дела рендерятся динамически -->
+                        </ul>
+                        <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-center app-text-muted opacity-60">
+                            <i class="fa-solid fa-clipboard-list text-4xl mb-2"></i>
+                            <p>Список пуст или не выбран раздел</p>
+                        </div>
+                    </div>
+
+                    <!-- Нижняя панель действий -->
+                    <div id="section-footer" class="flex flex-wrap justify-between items-center pt-3 border-t app-border text-xs gap-2 hidden">
+                        <span id="tasks-counter" class="app-text-muted">Осталось: 0</span>
+                        <div class="flex gap-2">
+                            <button id="clear-completed-btn" class="px-2.5 py-1.5 rounded hover:bg-red-500/10 text-red-500 transition">
+                                <i class="fa-solid fa-trash-can mr-1"></i>Очистить выполненные
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+
+        </div>
+    </div>
+
+    <!-- Модальное окно настроек -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="app-card border rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col gap-5">
+            <div class="flex justify-between items-center border-b app-border pb-3">
+                <h3 class="font-bold text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Настройки внешнего вида
+                </h3>
+                <button id="close-settings-btn" class="app-text-muted hover:app-text p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                <!-- Тема -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase app-text-muted mb-2">Тема оформления</label>
+                    <select id="setting-theme" class="w-full px-3 py-2 rounded-lg border app-border bg-transparent app-text focus:outline-none">
+                        <option value="theme-light" class="bg-white text-black">Светлая</option>
+                        <option value="theme-dark" class="bg-slate-900 text-white">Тёмная</option>
+                        <option value="theme-pastel" class="bg-rose-50 text-rose-900">Пастельная</option>
+                        <option value="theme-cyberpunk" class="bg-zinc-950 text-yellow-400">Киберпанк</option>
+                        <option value="theme-minimal" class="bg-white text-zinc-900">Минималичтичная</option>
+                    </select>
+                </div>
+
+                <!-- Размер шрифта -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase app-text-muted mb-2">Размер шрифта</label>
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                        <button data-size="fs-sm" class="size-btn p-2 border app-border rounded-lg">Мелкий</button>
+                        <button data-size="fs-md" class="size-btn p-2 border app-border rounded-lg">Средний</button>
+                        <button data-size="fs-lg" class="size-btn p-2 border app-border rounded-lg">Крупный</button>
+                        <button data-size="fs-xl" class="size-btn p-2 border app-border rounded-lg">Огромный</button>
+                    </div>
+                </div>
+
+                <!-- Акцентный цвет (Цвет кнопок/точек) -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase app-text-muted mb-2">Цвет акцента</label>
+                    <div class="flex gap-3 items-center">
+                        <input type="color" id="setting-accent-color" value="#3b82f6" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0">
+                        <span class="text-xs app-text-muted">Выберите цвет элементов и чекбоксов</span>
+                    </div>
+                </div>
+
+                <!-- Яркость -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="font-semibold uppercase app-text-muted">Яркость</span>
+                        <span id="brightness-val">100%</span>
+                    </div>
+                    <input type="range" id="setting-brightness" min="50" max="150" value="100" class="w-full">
+                </div>
+
+                <!-- Контрастность -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="font-semibold uppercase app-text-muted">Контрастность</span>
+                        <span id="contrast-val">100%</span>
+                    </div>
+                    <input type="range" id="setting-contrast" min="50" max="150" value="100" class="w-full">
+                </div>
+            </div>
+
+            <button id="reset-settings-btn" class="w-full py-2 border app-border rounded-lg text-xs text-red-500 hover:bg-red-500/10 transition mt-2">
+                Сбросить настройки по умолчанию
+            </button>
+        </div>
+    </div>
+
+    <!-- Основной скрипт приложения -->
+    <script>
+        // Инициализация структуры данных
+        let state = {
+            sections: [],
+            activeSectionId: null,
+            filter: 'all',
+            settings: {
+                theme: 'theme-light',
+                fontSize: 'fs-md',
+                accentColor: '#3b82f6',
+                brightness: 100,
+                contrast: 100
+            }
+        };
+
+        // Загрузка сохранённых данных из localStorage
+        function loadState() {
+            const savedState = localStorage.getItem('organizer_app_state');
+            if (savedState) {
+                try {
+                    state = JSON.parse(savedState);
+                } catch (e) {
+                    console.error('Ошибка загрузки сохранённых данных:', e);
+                }
+            }
+
+            // Если разделов нет, создадим один по умолчанию
+            if (!state.sections || state.sections.length === 0) {
+                const defaultId = Date.now().toString();
+                state.sections = [{
+                    id: defaultId,
+                    title: 'Покупки',
+                    tasks: [
+                        { id: '1', text: 'Купить молоко', completed: false },
+                        { id: '2', text: 'Хлеб и масло', completed: true }
+                    ]
+                }];
+                state.activeSectionId = defaultId;
+            }
+
+            if (!state.activeSectionId && state.sections.length > 0) {
+                state.activeSectionId = state.sections[0].id;
+            }
+
+            applySettings();
+        }
+
+        // Сохранение состояния в localStorage
+        function saveState() {
+            localStorage.setItem('organizer_app_state', JSON.stringify(state));
+        }
+
+        // Применение visual settings к DOM
+        function applySettings() {
+            const body = document.getElementById('app-body');
+            const { theme, fontSize, accentColor, brightness, contrast } = state.settings;
+
+            // Тема
+            body.className = `${theme} ${fontSize} app-bg app-text min-h-full flex flex-col transition-all`;
+
+            // Акцентный цвет
+            document.documentElement.style.setProperty('--accent-color', accentColor);
+            
+            // Фильтры яркости и контраста
+            body.style.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
+
+            // Обновление UI элементов настроек
+            document.getElementById('setting-theme').value = theme;
+            document.getElementById('setting-accent-color').value = accentColor;
+            document.getElementById('setting-brightness').value = brightness;
+            document.getElementById('brightness-val').textContent = `${brightness}%`;
+            document.getElementById('setting-contrast').value = contrast;
+            document.getElementById('contrast-val').textContent = `${contrast}%`;
+
+            // Подсветка кнопки размера шрифта
+            document.querySelectorAll('.size-btn').forEach(btn => {
+                if (btn.dataset.size === fontSize) {
+                    btn.classList.add('app-btn-primary');
+                } else {
+                    btn.classList.remove('app-btn-primary');
+                }
+            });
+        }
+
+        // Рендеринг списка разделов
+        function renderSections() {
+            const listEl = document.getElementById('sections-list');
+            const countEl = document.getElementById('sections-count');
+            listEl.innerHTML = '';
+
+            countEl.textContent = state.sections.length;
+
+            state.sections.forEach(sec => {
+                const isActive = sec.id === state.activeSectionId;
+                const completedCount = sec.tasks.filter(t => t.completed).length;
+
+                const li = document.createElement('li');
+                li.className = `flex justify-between items-center p-2.5 rounded-lg cursor-pointer transition group border ${
+                    isActive ? 'app-btn-primary font-medium' : 'border-transparent hover:bg-black/5 dark:hover:bg-white/5'
+                }`;
+                
+                li.onclick = () => {
+                    state.activeSectionId = sec.id;
+                    saveState();
+                    renderSections();
+                    renderTasks();
+                };
+
+                li.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden pr-2">
+                        <i class="fa-solid fa-folder text-xs"></i>
+                        <span class="truncate text-sm">${escapeHtml(sec.title)}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'app-bg app-text-muted'} font-semibold">
+                            ${completedCount}/${sec.tasks.length}
+                        </span>
+                        <button onclick="deleteSection(event, '${sec.id}')" class="p-1 opacity-0 group-hover:opacity-100 hover:text-red-400 transition" title="Удалить раздел">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `;
+
+                listEl.appendChild(li);
+            });
+        }
+
+        // Рендеринг списка задач в текущем разделе
+        function renderTasks() {
+            const tasksListEl = document.getElementById('tasks-list');
+            const emptyStateEl = document.getElementById('empty-state');
+            const titleEl = document.getElementById('current-section-title');
+            const editBtn = document.getElementById('edit-section-btn');
+            const taskInput = document.getElementById('new-task-input');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const footerEl = document.getElementById('section-footer');
+            const counterEl = document.getElementById('tasks-counter');
+
+            const activeSection = state.sections.find(s => s.id === state.activeSectionId);
+
+            tasksListEl.innerHTML = '';
+
+            if (!activeSection) {
+                titleEl.textContent = 'Выберите или создайте раздел';
+                editBtn.classList.add('hidden');
+                taskInput.disabled = true;
+                addTaskBtn.disabled = true;
+                emptyStateEl.classList.remove('hidden');
+                footerEl.classList.add('hidden');
+                return;
+            }
+
+            // Активируем элементы
+            titleEl.textContent = activeSection.title;
+            editBtn.classList.remove('hidden');
+            taskInput.disabled = false;
+            addTaskBtn.disabled = false;
+            footerEl.classList.remove('hidden');
+
+            // Фильтрация
+            let filteredTasks = activeSection.tasks;
+            if (state.filter === 'active') {
+                filteredTasks = activeSection.tasks.filter(t => !t.completed);
+            } else if (state.filter === 'completed') {
+                filteredTasks = activeSection.tasks.filter(t => t.completed);
+            }
+
+            if (filteredTasks.length === 0) {
+                emptyStateEl.classList.remove('hidden');
+            } else {
+                emptyStateEl.classList.add('hidden');
+            }
+
+            // Рендер каждого дела
+            filteredTasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between p-3 rounded-lg border app-border app-card hover:shadow-sm transition group';
+
+                li.innerHTML = `
+                    <div class="flex items-center gap-3 flex-grow pr-3">
+                        <input type="checkbox" class="custom-checkbox" ${task.completed ? 'checked' : ''} 
+                            onchange="toggleTask('${task.id}')">
+                        <span class="app-text ${task.completed ? 'completed-item' : ''} cursor-pointer" onclick="toggleTask('${task.id}')">
+                            ${escapeHtml(task.text)}
+                        </span>
+                    </div>
+                    <button onclick="deleteTask('${task.id}')" class="text-xs app-text-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1" title="Удалить">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                `;
+
+                tasksListEl.appendChild(li);
+            });
+
+            // Обновление счетчика оставшихся дел
+            const remainingCount = activeSection.tasks.filter(t => !t.completed).length;
+            counterEl.textContent = `Осталось активных: ${remainingCount}`;
+        }
+
+        // Экранирование HTML для защиты от XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Добавление раздела
+        document.getElementById('add-section-form').onsubmit = (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-section-input');
+            const title = input.value.trim();
+            if (!title) return;
+
+            const newSection = {
+                id: Date.now().toString(),
+                title: title,
+                tasks: []
+            };
+
+            state.sections.push(newSection);
+            state.activeSectionId = newSection.id;
+            input.value = '';
+            
+            saveState();
+            renderSections();
+            renderTasks();
+        };
+
+        // Удаление раздела
+        function deleteSection(event, id) {
+            event.stopPropagation();
+            if (state.sections.length <= 1) {
+                alert('Нельзя удалить последний оставшийся раздел!');
+                return;
+            }
+            state.sections = state.sections.filter(s => s.id !== id);
+            if (state.activeSectionId === id) {
+                state.activeSectionId = state.sections[0].id;
+            }
+            saveState();
+            renderSections();
+            renderTasks();
+        }
+
+        // Редактирование названия раздела
+        document.getElementById('edit-section-btn').onclick = () => {
+            const activeSection = state.sections.find(s => s.id === state.activeSectionId);
+            if (!activeSection) return;
+
+            const newTitle = prompt('Введите новое название раздела:', activeSection.title);
+            if (newTitle && newTitle.trim()) {
+                activeSection.title = newTitle.trim();
+                saveState();
+                renderSections();
+                renderTasks();
+            }
+        };
+
+        // Добавление задачи
+        document.getElementById('add-task-form').onsubmit = (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-task-input');
+            const text = input.value.trim();
+            if (!text || !state.activeSectionId) return;
+
+            const activeSection = state.sections.find(s => s.id === state.activeSectionId);
+            if (activeSection) {
+                activeSection.tasks.push({
+                    id: Date.now().toString(),
+                    text: text,
+                    completed: false
+                });
+                input.value = '';
+                saveState();
+                renderSections();
+                renderTasks();
+            }
+        };
+
+        // Переключение статуса задачи
+        function toggleTask(taskId) {
+            const activeSection = state.sections.find(s => s.id === state.activeSectionId);
+            if (activeSection) {
+                const task = activeSection.tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.completed = !task.completed;
+                    saveState();
+                    renderSections();
+                    renderTasks();
+                }
+            }
+        }
+
+        // Удаление задачи
+        function deleteTask(taskId) {
+            const activeSection = state.sections.find(s => s.id === state.activeSectionId);
+            if (activeSection) {
+                activeSection.tasks = activeSection.tasks.filter(t => t.id !== taskId);
+                saveState();
+                renderSections();
+                renderTasks();
+            }
+        }
+
+        // Очистка всех выполненных задач текущего раздела
+        document.getElementById('clear-completed-btn').onclick = () => {
+            const activeSection = state.sections.find(s => s.id === state.activeSectionId);
+            if (activeSection) {
+                activeSection.tasks = activeSection.tasks.filter(t => !t.completed);
+                saveState();
+                renderSections();
+                renderTasks();
+            }
+        };
+
+        // Управление фильтрами
+        document.getElementById('filter-controls').addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-btn')) {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-filter', 'app-card'));
+                e.target.classList.add('active-filter', 'app-card');
+                state.filter = e.target.dataset.filter;
+                renderTasks();
+            }
+        });
+
+        // Модальное окно настроек
+        const modal = document.getElementById('settings-modal');
+        document.getElementById('open-settings-btn').onclick = () => modal.classList.remove('hidden');
+        document.getElementById('close-settings-btn').onclick = () => modal.classList.add('hidden');
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        };
+
+        // Обработка изменений настроек
+        document.getElementById('setting-theme').onchange = (e) => {
+            state.settings.theme = e.target.value;
+            saveState();
+            applySettings();
+        };
+
+        document.querySelectorAll('.size-btn').forEach(btn => {
+            btn.onclick = () => {
+                state.settings.fontSize = btn.dataset.size;
+                saveState();
+                applySettings();
+            };
+        });
+
+        document.getElementById('setting-accent-color').oninput = (e) => {
+            state.settings.accentColor = e.target.value;
+            saveState();
+            applySettings();
+        };
+
+        document.getElementById('setting-brightness').oninput = (e) => {
+            state.settings.brightness = e.target.value;
+            saveState();
+            applySettings();
+        };
+
+        document.getElementById('setting-contrast').oninput = (e) => {
+            state.settings.contrast = e.target.value;
+            saveState();
+            applySettings();
+        };
+
+        // Сброс настроек
+        document.getElementById('reset-settings-btn').onclick = () => {
+            state.settings = {
+                theme: 'theme-light',
+                fontSize: 'fs-md',
+                accentColor: '#3b82f6',
+                brightness: 100,
+                contrast: 100
+            };
+            saveState();
+            applySettings();
+        };
+
+        // Инициализация при старте
+        window.onload = () => {
+            loadState();
+            renderSections();
+            renderTasks();
+        };
+    </script>
+</body>
+</html>
