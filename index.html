@@ -1,215 +1,336 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Менеджер задач с быстрым многострочным вводом</title>
+    <title>TaskFlow & Shopping Hub</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Кастомные плавные переходы */
+        /* Плавные переходы для тем оформления */
         * {
             transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
         }
-        /* Стилизация скроллбара */
+
+        /* Кастомный красивый скроллбар */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 4px;
+            background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(107, 114, 128, 0.7);
+        }
+
+        /* Темы оформления */
+        body.theme-light {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-subtle: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        body.theme-dark {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-subtle: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        body.theme-pastel {
+            --bg-main: #fdf6f0;
+            --bg-card: #ffffff;
+            --bg-subtle: #f4eae1;
+            --text-main: #4a3e3d;
+            --text-muted: #8c7a78;
+            --border-color: #eee0d5;
+        }
+
+        body.theme-cyberpunk {
+            --bg-main: #0d0221;
+            --bg-card: #190938;
+            --bg-subtle: #2b0c5a;
+            --text-main: #00f0ff;
+            --text-muted: #ff007f;
+            --border-color: #ff007f;
+        }
+
+        body.theme-minimal {
+            --bg-main: #ffffff;
+            --bg-card: #ffffff;
+            --bg-subtle: #f5f5f5;
+            --text-main: #171717;
+            --text-muted: #737373;
+            --border-color: #e5e5e5;
+        }
+
+        /* Применение переменных тем */
+        .app-bg { background-color: var(--bg-main); }
+        .app-card { background-color: var(--bg-card); border-color: var(--border-color); }
+        .app-subtle { background-color: var(--bg-subtle); }
+        .app-text { color: var(--text-main); }
+        .app-text-muted { color: var(--text-muted); }
+        .app-border { border-color: var(--border-color); }
+
+        /* Динамические фильтры яркости и контрастности */
+        #app-root {
+            filter: brightness(var(--app-brightness, 100%)) contrast(var(--app-contrast, 100%));
         }
     </style>
 </head>
-<body id="app-body" class="bg-slate-100 text-slate-800 min-h-screen font-sans flex flex-col antialiased">
+<body id="app-body" class="theme-light app-bg app-text min-h-screen font-sans flex flex-col antialiased">
 
-    <!-- Верхняя панель навигации -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-indigo-200">
-                    <i class="fa-solid fa-list-check text-xl"></i>
+    <!-- Контейнер с настройками фильтров яркости/контраста -->
+    <div id="app-root" class="min-h-screen flex flex-col">
+
+        <!-- Верхняя панель навигации -->
+        <header class="app-card border-b sticky top-0 z-30 shadow-sm backdrop-blur-md">
+            <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div id="logo-icon" class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md transition-transform hover:scale-105">
+                        <i class="fa-solid fa-list-check text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight tracking-tight">TaskFlow & Shopping Hub</h1>
+                        <p class="text-xs app-text-muted">Организатор задач и покупок по разделам</p>
+                    </div>
+                </div>
+
+                <!-- Кнопки быстрых действий -->
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleSettingsModal()" class="p-2.5 app-subtle rounded-xl hover:opacity-80 transition flex items-center gap-2 text-xs font-semibold" title="Настройки внешнего вида">
+                        <i class="fa-solid fa-palette text-sm"></i>
+                        <span class="hidden sm:inline">Оформление</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full flex flex-col md:flex-row gap-6">
+
+            <!-- Боковая панель категорий (Разделов) -->
+            <aside class="w-full md:w-72 flex-shrink-0 flex flex-col gap-4">
+                <div class="app-card p-4 rounded-2xl shadow-sm border flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b app-border pb-2.5">
+                        <span class="text-xs font-bold uppercase tracking-wider app-text-muted">Разделы</span>
+                        <button onclick="openCategoryModal()" class="text-indigo-600 hover:text-indigo-700 text-xs font-semibold flex items-center gap-1.5 bg-indigo-50 px-2.5 py-1 rounded-lg transition">
+                            <i class="fa-solid fa-plus"></i> Новый
+                        </button>
+                    </div>
+                    
+                    <!-- Список категорий -->
+                    <div id="categories-list" class="flex flex-col gap-1 max-h-64 md:max-h-none overflow-y-auto">
+                        <!-- Динамический вывод категорий через JS -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Рабочая область -->
+            <section class="flex-1 flex flex-col gap-6 min-w-0">
+
+                <!-- Блок многострочного быстрого ввода с выбором раздела -->
+                <div class="app-card p-5 rounded-2xl shadow-sm border flex flex-col gap-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label for="task-textarea" class="text-sm font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-bolt text-amber-500"></i> Многострочный ввод дел
+                        </label>
+                        <span class="text-xs app-text-muted">Каждая новая строка станет отдельной задачей</span>
+                    </div>
+
+                    <textarea id="task-textarea" rows="3" class="w-full p-3.5 border app-border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm app-subtle app-text placeholder:text-slate-400" placeholder="Купить молоко&#10;Подготовить финансовый отчет&#10;Записаться на ТО авто"></textarea>
+                    
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                        <!-- Выбор целевого раздела прямо перед вводом -->
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs app-text-muted whitespace-nowrap">Поместить в раздел:</label>
+                            <select id="target-category-select" class="p-2 border app-border rounded-xl text-xs outline-none app-subtle app-text font-medium cursor-pointer">
+                                <!-- Опции категорий генерируются JS -->
+                            </select>
+                        </div>
+
+                        <button onclick="addTasksFromTextarea()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-medium px-5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-2 text-sm transition-all">
+                            <i class="fa-solid fa-arrow-down-long"></i> Перенести в список
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Панель управления списками задачи вкладки -->
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-center justify-between border-b app-border pb-3 flex-wrap gap-3">
+                        
+                        <!-- Вкладки видов (Активные / Исполненные) -->
+                        <div class="flex app-subtle p-1 rounded-xl text-xs font-medium border app-border">
+                            <button id="tab-active-btn" onclick="switchTab('active')" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold flex items-center gap-2 transition-all shadow-sm">
+                                <i class="fa-solid fa-clock"></i>
+                                Активные дела
+                                <span id="active-badge" class="bg-white/20 text-white px-2 py-0.5 rounded-full text-[10px]">0</span>
+                            </button>
+                            <button id="tab-completed-btn" onclick="switchTab('completed')" class="px-4 py-2 rounded-lg app-text-muted hover:text-indigo-600 flex items-center gap-2 transition-all">
+                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                                Исполненные
+                                <span id="completed-badge" class="bg-slate-200 dark:bg-slate-700 app-text-muted px-2 py-0.5 rounded-full text-[10px]">0</span>
+                            </button>
+                        </div>
+
+                        <!-- Кнопки массовых действий -->
+                        <div id="transfer-btn-container" class="hidden">
+                            <button onclick="transferCheckedToCompleted()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 transition-all">
+                                <i class="fa-solid fa-box-archive"></i> Перенести отмеченные в исполненные
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Заголовок текущего выбранного раздела -->
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold app-text-muted uppercase tracking-wider">Раздел:</span>
+                            <span id="current-category-title" class="text-sm font-bold text-indigo-600">Все разделы</span>
+                        </div>
+                        <span id="filtered-count-badge" class="text-xs app-text-muted">Всего: 0</span>
+                    </div>
+
+                    <!-- Списки задач -->
+                    <div class="flex flex-col gap-3">
+                        
+                        <!-- Список 1: Активные дела -->
+                        <div id="active-tasks-container" class="space-y-2.5">
+                            <!-- Задачи выводятся через JS -->
+                        </div>
+
+                        <!-- Список 2: Исполненные дела -->
+                        <div id="completed-tasks-container" class="space-y-2.5 hidden">
+                            <!-- Исполненные задачи выводятся через JS -->
+                        </div>
+
+                        <!-- Пустое состояние -->
+                        <div id="empty-state" class="hidden text-center py-12 px-4 app-card border border-dashed rounded-2xl">
+                            <div class="w-12 h-12 app-subtle text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="fa-solid fa-inbox text-xl"></i>
+                            </div>
+                            <h3 class="text-sm font-semibold" id="empty-state-title">Задач в этом разделе нет</h3>
+                            <p class="text-xs app-text-muted mt-1" id="empty-state-desc">Воспользуйтесь формой выше, чтобы добавить новые дела</p>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- Модальное окно: Создание / Редактирование раздела -->
+    <div id="category-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity">
+        <div class="app-card rounded-2xl p-6 w-full max-w-sm shadow-2xl border transform scale-95 transition-transform">
+            <h3 id="category-modal-title" class="text-base font-bold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-folder-plus text-indigo-600"></i> Новый раздел
+            </h3>
+            <input type="hidden" id="edit-category-id" value="">
+            <div class="flex flex-col gap-3 mb-5">
+                <div>
+                    <label class="block text-xs font-semibold app-text-muted mb-1">Название раздела</label>
+                    <input type="text" id="new-category-name" placeholder="Например: Продукты, Работа, Дом" class="w-full p-3 border app-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 app-subtle app-text">
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight text-slate-900" id="header-title">TaskFlow Pro</h1>
-                    <p class="text-xs text-slate-500">Умное планирование и быстрый ввод</p>
+                    <label class="block text-xs font-semibold app-text-muted mb-1">Иконка</label>
+                    <select id="new-category-icon" class="w-full p-2.5 border app-border rounded-xl text-xs outline-none app-subtle app-text">
+                        <option value="fa-folder">📁 Папка</option>
+                        <option value="fa-cart-shopping">🛒 Покупки / Продукты</option>
+                        <option value="fa-briefcase">💼 Работа / Проект</option>
+                        <option value="fa-house">🏠 Дом / Быт</option>
+                        <option value="fa-heart text-rose-500">❤️ Личное</option>
+                        <option value="fa-dumbbell">🏋️ Спорт / Здоровье</option>
+                        <option value="fa-book">📚 Учеба / Книги</option>
+                    </select>
                 </div>
             </div>
-
-            <!-- Управление темами и настройками -->
-            <div class="flex items-center gap-2">
-                <button onclick="toggleSettingsModal()" class="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition" title="Настройки оформления">
-                    <i class="fa-solid fa-sliders text-lg"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Основной контент -->
-    <main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full flex flex-col md:flex-row gap-6">
-
-        <!-- Боковая панель категорий -->
-        <aside class="w-full md:w-64 flex-shrink-0 flex flex-col gap-4">
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-3">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Категории</span>
-                    <button onclick="openCategoryModal()" class="text-indigo-600 hover:text-indigo-700 text-xs font-medium flex items-center gap-1">
-                        <i class="fa-solid fa-plus"></i> Новая
-                    </button>
-                </div>
-                <!-- Список категорий -->
-                <div id="categories-list" class="flex flex-col gap-1 max-h-60 md:max-h-none overflow-y-auto">
-                    <!-- Категории будут добавлены динамически через JS -->
-                </div>
-            </div>
-        </aside>
-
-        <!-- Рабочая область -->
-        <section class="flex-1 flex flex-col gap-6">
-
-            <!-- Блок многострочного быстрого ввода -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-3">
-                <label for="task-textarea" class="text-sm font-semibold text-slate-700 flex items-center justify-between">
-                    <span class="flex items-center gap-2">
-                        <i class="fa-solid fa-bolt text-amber-500"></i> Быстрый ввод задач
-                    </span>
-                    <span class="text-xs font-normal text-slate-400">Каждая новая строка — отдельная задача</span>
-                </label>
-                <textarea id="task-textarea" rows="3" class="w-full p-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-y text-sm bg-slate-50/50" placeholder="Купить молоко&#10;Записаться к врачу&#10;Подготовить отчет по проекту"></textarea>
-                
-                <div class="flex justify-end">
-                    <button onclick="addTasksFromTextarea()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-medium px-5 py-2.5 rounded-xl shadow-md shadow-indigo-100 flex items-center gap-2 text-sm transition-all">
-                        <i class="fa-solid fa-arrow-down-long"></i> Перенести в список
-                    </button>
-                </div>
-            </div>
-
-            <!-- Панель управления списками и вкладки -->
-            <div class="flex flex-col gap-4">
-                <div class="flex items-center justify-between border-b border-slate-200 pb-3 flex-wrap gap-2">
-                    <!-- Переключатель вкладок -->
-                    <div class="flex bg-slate-200/70 p-1 rounded-xl text-xs font-medium">
-                        <button id="tab-active-btn" onclick="switchTab('active')" class="px-4 py-2 rounded-lg bg-white text-slate-800 shadow-sm font-semibold flex items-center gap-2">
-                            <i class="fa-solid fa-clock"></i>
-                            Активные задачи
-                            <span id="active-badge" class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px]">0</span>
-                        </button>
-                        <button id="tab-completed-btn" onclick="switchTab('completed')" class="px-4 py-2 rounded-lg text-slate-600 hover:text-slate-900 flex items-center gap-2">
-                            <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                            Исполненные
-                            <span id="completed-badge" class="bg-slate-300/50 text-slate-600 px-2 py-0.5 rounded-full text-[10px]">0</span>
-                        </button>
-                    </div>
-
-                    <!-- Кнопка переноса отмеченных задач в выполненные -->
-                    <div id="transfer-btn-container" class="hidden">
-                        <button onclick="transferCheckedToCompleted()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-medium px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 transition-all">
-                            <i class="fa-solid fa-box-archive"></i> Перенести отмеченные в список исполненных
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Контейнер списков -->
-                <div class="flex flex-col gap-3">
-                    
-                    <!-- Список 1: Активные дела -->
-                    <div id="active-tasks-container" class="space-y-2">
-                        <!-- Динамический список активных дел -->
-                    </div>
-
-                    <!-- Список 2: Исполненные / Сделанные дела -->
-                    <div id="completed-tasks-container" class="space-y-2 hidden">
-                        <!-- Динамический список исполненных дел -->
-                    </div>
-
-                    <!-- Пустое состояние -->
-                    <div id="empty-state" class="hidden text-center py-12 px-4 bg-white/50 border border-dashed border-slate-300 rounded-2xl">
-                        <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fa-solid fa-inbox text-xl"></i>
-                        </div>
-                        <h3 class="text-sm font-semibold text-slate-600" id="empty-state-title">Задач пока нет</h3>
-                        <p class="text-xs text-slate-400 mt-1" id="empty-state-desc">Введите задачи в текстовом поле выше и нажмите «Перенести в список»</p>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-    </main>
-
-    <!-- Модальное окно: Категории -->
-    <div id="category-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl border border-slate-100 transform scale-95 transition-transform">
-            <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-folder-plus text-indigo-600"></i> Создать категорию
-            </h3>
-            <input type="text" id="new-category-name" placeholder="Название (напр. Работа, Дом)" class="w-full p-3 border border-slate-200 rounded-xl text-sm mb-4 outline-none focus:ring-2 focus:ring-indigo-500">
             <div class="flex justify-end gap-2">
-                <button onclick="closeCategoryModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-xl text-xs font-medium">Отмена</button>
-                <button onclick="saveNewCategory()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-sm">Сохранить</button>
+                <button onclick="closeCategoryModal()" class="px-4 py-2 app-subtle app-text rounded-xl text-xs font-medium hover:opacity-80">Отмена</button>
+                <button onclick="saveCategory()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm">Сохранить</button>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно: Настройки темы и интерфейса -->
-    <div id="settings-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 transform scale-95 transition-transform">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-palette text-indigo-600"></i> Персонализация и настройки
+    <!-- Модальное окно: Персонализация и настройки -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity">
+        <div class="app-card rounded-2xl p-6 w-full max-w-md shadow-2xl border transform scale-95 transition-transform max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b app-border pb-3 mb-4">
+                <h3 class="text-base font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-600"></i> Персонализация и вид
                 </h3>
-                <button onclick="toggleSettingsModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+                <button onclick="toggleSettingsModal()" class="app-text-muted hover:app-text text-base p-1">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <div class="space-y-4 text-sm">
+            <div class="space-y-5 text-sm">
+                
                 <!-- Тема оформления -->
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Режим темы</label>
+                    <label class="block text-xs font-semibold app-text-muted mb-2">Тема оформления</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="setThemeMode('light')" id="theme-light-btn" class="p-2.5 border rounded-xl flex items-center justify-center gap-2 text-xs font-medium">
+                        <button onclick="setThemeMode('light')" class="p-2.5 border app-border rounded-xl flex items-center gap-2 text-xs font-medium app-subtle">
                             <i class="fa-solid fa-sun text-amber-500"></i> Светлая
                         </button>
-                        <button onclick="setThemeMode('dark')" id="theme-dark-btn" class="p-2.5 border rounded-xl flex items-center justify-center gap-2 text-xs font-medium">
+                        <button onclick="setThemeMode('dark')" class="p-2.5 border app-border rounded-xl flex items-center gap-2 text-xs font-medium app-subtle">
                             <i class="fa-solid fa-moon text-indigo-400"></i> Тёмная
+                        </button>
+                        <button onclick="setThemeMode('pastel')" class="p-2.5 border app-border rounded-xl flex items-center gap-2 text-xs font-medium app-subtle">
+                            <i class="fa-solid fa-cookie text-amber-700"></i> Пастельная
+                        </button>
+                        <button onclick="setThemeMode('cyberpunk')" class="p-2.5 border app-border rounded-xl flex items-center gap-2 text-xs font-medium app-subtle">
+                            <i class="fa-solid fa-bolt text-cyan-400"></i> Киберпанк
+                        </button>
+                        <button onclick="setThemeMode('minimal')" class="p-2.5 border app-border rounded-xl flex items-center gap-2 text-xs font-medium app-subtle col-span-2">
+                            <i class="fa-solid fa-square-minus text-slate-500"></i> Минимализм
                         </button>
                     </div>
                 </div>
 
                 <!-- Размер шрифта -->
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Размер шрифта</label>
-                    <select id="font-size-select" onchange="updateSettings()" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs outline-none bg-slate-50">
+                    <label class="block text-xs font-semibold app-text-muted mb-1">Размер шрифта</label>
+                    <select id="font-size-select" onchange="updateSettings()" class="w-full p-2.5 border app-border rounded-xl text-xs outline-none app-subtle app-text">
                         <option value="14">Маленький (14px)</option>
                         <option value="16" selected>Стандартный (16px)</option>
                         <option value="18">Увеличенный (18px)</option>
+                        <option value="20">Огромный (20px)</option>
                     </select>
                 </div>
 
-                <!-- Цветовая акцентная гамма -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Основной цвет текста/акцентов</label>
-                    <div class="flex gap-3">
-                        <button onclick="setAccentColor('indigo')" class="w-8 h-8 rounded-full bg-indigo-600 ring-2 ring-offset-2 ring-indigo-600"></button>
-                        <button onclick="setAccentColor('emerald')" class="w-8 h-8 rounded-full bg-emerald-600"></button>
-                        <button onclick="setAccentColor('rose')" class="w-8 h-8 rounded-full bg-rose-600"></button>
-                        <button onclick="setAccentColor('slate')" class="w-8 h-8 rounded-full bg-slate-800"></button>
+                <!-- Регулировка Brightness & Contrast -->
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-xs app-text-muted mb-1">
+                            <span>Яркость (Brightness)</span>
+                            <span id="brightness-val">100%</span>
+                        </div>
+                        <input type="range" id="brightness-range" min="70" max="130" value="100" oninput="updateSettings()" class="w-full accent-indigo-600">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs app-text-muted mb-1">
+                            <span>Контрастность (Contrast)</span>
+                            <span id="contrast-val">100%</span>
+                        </div>
+                        <input type="range" id="contrast-range" min="70" max="130" value="100" oninput="updateSettings()" class="w-full accent-indigo-600">
                     </div>
                 </div>
+
             </div>
 
-            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end">
-                <button onclick="toggleSettingsModal()" class="px-5 py-2 bg-slate-800 text-white rounded-xl text-xs font-medium">Готово</button>
+            <div class="mt-6 pt-4 border-t app-border flex justify-end">
+                <button onclick="toggleSettingsModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold">Готово</button>
             </div>
         </div>
     </div>
@@ -220,77 +341,90 @@
         let state = {
             tasks: [],
             categories: [
-                { id: 'all', name: 'Все задачи', icon: 'fa-layer-group' },
-                { id: 'personal', name: 'Личные', icon: 'fa-user' },
-                { id: 'work', name: 'Работа', icon: 'fa-briefcase' }
+                { id: 'all', name: 'Все разделы', icon: 'fa-layer-group', isSystem: true },
+                { id: 'shopping', name: 'Покупки', icon: 'fa-cart-shopping' },
+                { id: 'work', name: 'Работа', icon: 'fa-briefcase' },
+                { id: 'home', name: 'Дом и Быт', icon: 'fa-house' }
             ],
             selectedCategory: 'all',
             activeTab: 'active', // 'active' или 'completed'
             settings: {
                 theme: 'light',
                 fontSize: '16',
-                accentColor: 'indigo'
+                brightness: '100',
+                contrast: '100'
             }
         };
 
-        // Загрузка данных при инициализации
+        // Загрузка приложения при старте
         window.onload = function() {
             loadFromLocalStorage();
             applySettings();
             renderCategories();
+            populateTargetCategorySelect();
             renderTasks();
         };
 
-        // --- Сохранение и загрузка ---
+        // --- Сохранение и Загрузка в localStorage ---
         function saveToLocalStorage() {
-            localStorage.setItem('taskflow_data', JSON.stringify(state));
+            localStorage.setItem('taskflow_advanced_data', JSON.stringify(state));
         }
 
         function loadFromLocalStorage() {
-            const saved = localStorage.getItem('taskflow_data');
+            const saved = localStorage.getItem('taskflow_advanced_data');
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
                     state = { ...state, ...parsed };
                 } catch(e) {
-                    console.error('Ошибка загрузки данных из localStorage', e);
+                    console.error('Ошибка чтения данных из localStorage', e);
                 }
             }
         }
 
-        // --- Многострочный быстрый ввод ---
+        // --- Многострочный ввод дел ---
         function addTasksFromTextarea() {
             const textarea = document.getElementById('task-textarea');
+            const targetCategory = document.getElementById('target-category-select').value;
             const rawText = textarea.value;
+
             if (!rawText.trim()) return;
 
-            // Разбиваем по переносу строки, убираем пустые пробельные строки
+            // Разбиваем по переносу строки, очищаем от пробелов по краям
             const lines = rawText.split('\n')
                 .map(line => line.trim())
                 .filter(line => line.length > 0);
 
             if (lines.length === 0) return;
 
+            // Определяем категорию для сохранения: если выбрано "Все разделы", ставим первый пользовательский раздел
+            let defaultCatId = targetCategory;
+            if (defaultCatId === 'all') {
+                const firstUserCat = state.categories.find(c => !c.isSystem);
+                defaultCatId = firstUserCat ? firstUserCat.id : 'shopping';
+            }
+
             // Создаем объекты задач
             const newTasks = lines.map(text => ({
                 id: Date.now() + Math.random().toString(36).substr(2, 9),
                 text: text,
-                categoryId: state.selectedCategory === 'all' ? 'personal' : state.selectedCategory,
-                checked: false,      // Отметка зачеркивания (Этап 1)
-                isCompleted: false,  // Перенесено в выполненные (Этап 2)
+                categoryId: defaultCatId,
+                checked: false,      // Этап 1: зачеркнуто галочкой
+                isCompleted: false,  // Этап 2: перенесено в список выполненных
                 createdAt: new Date().toISOString()
             }));
 
             state.tasks.unshift(...newTasks);
-            textarea.value = ''; // Очищаем поле ввода
+            textarea.value = '';
 
             saveToLocalStorage();
+            renderCategories();
             renderTasks();
         }
 
-        // --- Двухэтапная обработка выполненных задач ---
+        // --- Управление задачами ---
 
-        // Этап 1: Переключение отметки (зачеркивает задачу прямо в текущем списке)
+        // Этап 1: Отметка зачеркивания (в активном списке)
         function toggleTaskCheck(id) {
             const task = state.tasks.find(t => t.id === id);
             if (task) {
@@ -300,7 +434,18 @@
             }
         }
 
-        // Этап 2: Кнопка переноса отмеченных (зачеркнутых) в список "Исполненные"
+        // Изменение раздела прямо из карточки задачи
+        function changeTaskCategory(id, newCategoryId) {
+            const task = state.tasks.find(t => t.id === id);
+            if (task) {
+                task.categoryId = newCategoryId;
+                saveToLocalStorage();
+                renderCategories();
+                renderTasks();
+            }
+        }
+
+        // Этап 2: Кнопка переноса зачеркнутых отмеченных дел в "Исполненные"
         function transferCheckedToCompleted() {
             let hasChanges = false;
             state.tasks.forEach(task => {
@@ -312,180 +457,54 @@
 
             if (hasChanges) {
                 saveToLocalStorage();
+                renderCategories();
                 renderTasks();
             }
         }
 
-        // Восстановление задачи обратно в активные
+        // Возврат задачи из исполненных обратно в активные
         function restoreTask(id) {
             const task = state.tasks.find(t => t.id === id);
             if (task) {
                 task.isCompleted = false;
-                task.checked = false; // Снимаем зачеркивание при возврате
+                task.checked = false; // снимаем зачеркивание при возврате
                 saveToLocalStorage();
+                renderCategories();
                 renderTasks();
             }
         }
 
-        // Удаление задачи
+        // Удаление отдельной задачи
         function deleteTask(id) {
-            state.tasks = state.tasks.filter(t => t.id === id);
+            state.tasks = state.tasks.filter(t => t.id !== id);
             saveToLocalStorage();
-            renderTasks();
-        }
-
-        // --- Переключение вкладок ---
-        function switchTab(tab) {
-            state.activeTab = tab;
-            
-            const activeBtn = document.getElementById('tab-active-btn');
-            const completedBtn = document.getElementById('tab-completed-btn');
-
-            if (tab === 'active') {
-                activeBtn.className = "px-4 py-2 rounded-lg bg-white text-slate-800 shadow-sm font-semibold flex items-center gap-2";
-                completedBtn.className = "px-4 py-2 rounded-lg text-slate-600 hover:text-slate-900 flex items-center gap-2";
-                document.getElementById('active-tasks-container').classList.remove('hidden');
-                document.getElementById('completed-tasks-container').classList.add('hidden');
-            } else {
-                completedBtn.className = "px-4 py-2 rounded-lg bg-white text-slate-800 shadow-sm font-semibold flex items-center gap-2";
-                activeBtn.className = "px-4 py-2 rounded-lg text-slate-600 hover:text-slate-900 flex items-center gap-2";
-                document.getElementById('completed-tasks-container').classList.remove('hidden');
-                document.getElementById('active-tasks-container').classList.add('hidden');
-            }
-
-            renderTasks();
-        }
-
-        // --- Рендеринг интерфейса ---
-        function renderTasks() {
-            const activeContainer = document.getElementById('active-tasks-container');
-            const completedContainer = document.getElementById('completed-tasks-container');
-            const emptyState = document.getElementById('empty-state');
-            const transferBtnContainer = document.getElementById('transfer-btn-container');
-
-            // Фильтрация по категории
-            const categoryFiltered = state.tasks.filter(t => 
-                state.selectedCategory === 'all' || t.categoryId === state.selectedCategory
-            );
-
-            // Разделение на активные и исполненные
-            const activeTasks = categoryFiltered.filter(t => !t.isCompleted);
-            const completedTasks = categoryFiltered.filter(t => t.isCompleted);
-
-            // Обновление бейджей с количеством
-            document.getElementById('active-badge').innerText = activeTasks.length;
-            document.getElementById('completed-badge').innerText = completedTasks.length;
-
-            // Проверка: есть ли задачи с отметкой, готовые к переносу
-            const hasCheckedTasks = activeTasks.some(t => t.checked);
-            if (hasCheckedTasks && state.activeTab === 'active') {
-                transferBtnContainer.classList.remove('hidden');
-            } else {
-                transferBtnContainer.classList.add('hidden');
-            }
-
-            // Рендер активных задач
-            activeContainer.innerHTML = '';
-            activeTasks.forEach(task => {
-                const item = document.createElement('div');
-                item.className = `p-3.5 bg-white border rounded-xl flex items-center justify-between gap-3 shadow-sm hover:border-slate-300 ${task.checked ? 'bg-slate-50 border-slate-200' : 'border-slate-200/80'}`;
-                
-                item.innerHTML = `
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <button onclick="toggleTaskCheck('${task.id}')" class="w-6 h-6 rounded-lg border ${task.checked ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 hover:border-indigo-500'} flex items-center justify-center flex-shrink-0 transition-colors">
-                            ${task.checked ? '<i class="fa-solid fa-check text-xs"></i>' : ''}
-                        </button>
-                        <span class="text-sm ${task.checked ? 'line-through text-slate-400' : 'text-slate-700'} truncate select-none">
-                            ${escapeHtml(task.text)}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="deleteTask('${task.id}')" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg transition" title="Удалить">
-                            <i class="fa-solid fa-trash-can text-xs"></i>
-                        </button>
-                    </div>
-                `;
-                activeContainer.appendChild(item);
-            });
-
-            // Рендер исполненных задач
-            completedContainer.innerHTML = '';
-            completedTasks.forEach(task => {
-                const item = document.createElement('div');
-                item.className = "p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between gap-3 opacity-80";
-                
-                item.innerHTML = `
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                            <i class="fa-solid fa-check text-xs"></i>
-                        </div>
-                        <span class="text-sm line-through text-slate-400 truncate">
-                            ${escapeHtml(task.text)}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="restoreTask('${task.id}')" class="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg transition text-xs flex items-center gap-1" title="Вернуть в активные">
-                            <i class="fa-solid fa-rotate-left"></i>
-                        </button>
-                        <button onclick="deleteTask('${task.id}')" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg transition" title="Удалить полностью">
-                            <i class="fa-solid fa-trash-can text-xs"></i>
-                        </button>
-                    </div>
-                `;
-                completedContainer.appendChild(item);
-            });
-
-            // Отображение пустого состояния
-            const currentList = state.activeTab === 'active' ? activeTasks : completedTasks;
-            if (currentList.length === 0) {
-                emptyState.classList.remove('hidden');
-                if (state.activeTab === 'completed') {
-                    document.getElementById('empty-state-title').innerText = "Нет исполненных дел";
-                    document.getElementById('empty-state-desc').innerText = "Отметьте задачи и нажмите «Перенести в список исполненных»";
-                } else {
-                    document.getElementById('empty-state-title').innerText = "Список активных дел пуст";
-                    document.getElementById('empty-state-desc').innerText = "Введите задачи в текстовом поле выше и нажмите «Перенести в список»";
-                }
-            } else {
-                emptyState.classList.add('hidden');
-            }
-        }
-
-        // Рендер категорий
-        function renderCategories() {
-            const list = document.getElementById('categories-list');
-            list.innerHTML = '';
-
-            state.categories.forEach(cat => {
-                const isSelected = state.selectedCategory === cat.id;
-                const btn = document.createElement('button');
-                btn.onclick = () => selectCategory(cat.id);
-                btn.className = `w-full text-left px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between ${
-                    isSelected ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
-                }`;
-
-                const count = state.tasks.filter(t => !t.isCompleted && (cat.id === 'all' || t.categoryId === cat.id)).length;
-
-                btn.innerHTML = `
-                    <span class="flex items-center gap-2 truncate">
-                        <i class="fa-solid ${cat.icon || 'fa-folder'} text-xs ${isSelected ? 'text-indigo-600' : 'text-slate-400'}"></i>
-                        ${escapeHtml(cat.name)}
-                    </span>
-                    <span class="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md text-[10px]">${count}</span>
-                `;
-                list.appendChild(btn);
-            });
-        }
-
-        function selectCategory(id) {
-            state.selectedCategory = id;
             renderCategories();
             renderTasks();
         }
 
-        // Модальное окно категорий
-        function openCategoryModal() {
+        // --- Управление разделами (Категориями) ---
+        function openCategoryModal(categoryId = null) {
             const modal = document.getElementById('category-modal');
+            const title = document.getElementById('category-modal-title');
+            const nameInput = document.getElementById('new-category-name');
+            const iconSelect = document.getElementById('new-category-icon');
+            const idInput = document.getElementById('edit-category-id');
+
+            if (categoryId) {
+                const cat = state.categories.find(c => c.id === categoryId);
+                if (cat) {
+                    title.innerHTML = '<i class="fa-solid fa-pen text-indigo-600"></i> Редактировать раздел';
+                    idInput.value = cat.id;
+                    nameInput.value = cat.name;
+                    iconSelect.value = cat.icon || 'fa-folder';
+                }
+            } else {
+                title.innerHTML = '<i class="fa-solid fa-folder-plus text-indigo-600"></i> Новый раздел';
+                idInput.value = '';
+                nameInput.value = '';
+                iconSelect.value = 'fa-folder';
+            }
+
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
@@ -502,25 +521,269 @@
             }, 200);
         }
 
-        function saveNewCategory() {
-            const input = document.getElementById('new-category-name');
-            const name = input.value.trim();
+        function saveCategory() {
+            const nameInput = document.getElementById('new-category-name');
+            const iconSelect = document.getElementById('new-category-icon');
+            const idInput = document.getElementById('edit-category-id');
+
+            const name = nameInput.value.trim();
             if (!name) return;
 
-            const newCat = {
-                id: Date.now().toString(36),
-                name: name,
-                icon: 'fa-folder'
-            };
+            if (idInput.value) {
+                // Переименование существующего раздела
+                const cat = state.categories.find(c => c.id === idInput.value);
+                if (cat) {
+                    cat.name = name;
+                    cat.icon = iconSelect.value;
+                }
+            } else {
+                // Создание нового раздела
+                const newCat = {
+                    id: Date.now().toString(36),
+                    name: name,
+                    icon: iconSelect.value
+                };
+                state.categories.push(newCat);
+            }
 
-            state.categories.push(newCat);
-            input.value = '';
-            closeCategoryModal();
             saveToLocalStorage();
             renderCategories();
+            populateTargetCategorySelect();
+            renderTasks();
+            closeCategoryModal();
         }
 
-        // --- Настройки интерфейса ---
+        function deleteCategory(id, event) {
+            event.stopPropagation();
+            const cat = state.categories.find(c => c.id === id);
+            if (!cat || cat.isSystem) return;
+
+            if (confirm(`Удалить раздел "${cat.name}"? Задачи из этого раздела будут перенесены в первый доступный раздел.`)) {
+                // Находим резервный раздел
+                const fallbackCat = state.categories.find(c => !c.isSystem && c.id !== id) || { id: 'shopping' };
+
+                // Переносим задачи в резервный раздел
+                state.tasks.forEach(t => {
+                    if (t.categoryId === id) {
+                        t.categoryId = fallbackCat.id;
+                    }
+                });
+
+                // Удаляем категорию
+                state.categories = state.categories.filter(c => c.id !== id);
+
+                if (state.selectedCategory === id) {
+                    state.selectedCategory = 'all';
+                }
+
+                saveToLocalStorage();
+                renderCategories();
+                populateTargetCategorySelect();
+                renderTasks();
+            }
+        }
+
+        // --- Переключение вкладок ---
+        function switchTab(tab) {
+            state.activeTab = tab;
+            
+            const activeBtn = document.getElementById('tab-active-btn');
+            const completedBtn = document.getElementById('tab-completed-btn');
+
+            if (tab === 'active') {
+                activeBtn.className = "px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold flex items-center gap-2 transition-all shadow-sm";
+                completedBtn.className = "px-4 py-2 rounded-lg app-text-muted hover:text-indigo-600 flex items-center gap-2 transition-all";
+                document.getElementById('active-tasks-container').classList.remove('hidden');
+                document.getElementById('completed-tasks-container').classList.add('hidden');
+            } else {
+                completedBtn.className = "px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold flex items-center gap-2 transition-all shadow-sm";
+                activeBtn.className = "px-4 py-2 rounded-lg app-text-muted hover:text-indigo-600 flex items-center gap-2 transition-all";
+                document.getElementById('completed-tasks-container').classList.remove('hidden');
+                document.getElementById('active-tasks-container').classList.add('hidden');
+            }
+
+            renderTasks();
+        }
+
+        // --- Отображение разделов в интерфейсе ---
+        function renderCategories() {
+            const list = document.getElementById('categories-list');
+            list.innerHTML = '';
+
+            state.categories.forEach(cat => {
+                const isSelected = state.selectedCategory === cat.id;
+                const btn = document.createElement('div');
+                btn.onclick = () => selectCategory(cat.id);
+                
+                btn.className = `w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium flex items-center justify-between cursor-pointer group transition-all ${
+                    isSelected ? 'bg-indigo-600 text-white font-semibold shadow-sm' : 'app-subtle hover:opacity-90 app-text'
+                }`;
+
+                // Подсчет незавершенных задач в категории
+                const count = state.tasks.filter(t => !t.isCompleted && (cat.id === 'all' || t.categoryId === cat.id)).length;
+
+                btn.innerHTML = `
+                    <div class="flex items-center gap-2.5 truncate min-w-0">
+                        <i class="fa-solid ${cat.icon || 'fa-folder'} text-xs ${isSelected ? 'text-white' : 'text-indigo-500'}"></i>
+                        <span class="truncate">${escapeHtml(cat.name)}</span>
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <span class="${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 app-text-muted'} px-2 py-0.5 rounded-md text-[10px] font-semibold">${count}</span>
+                        ${!cat.isSystem ? `
+                            <button onclick="event.stopPropagation(); openCategoryModal('${cat.id}')" class="p-1 text-slate-400 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition" title="Переименовать">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                            <button onclick="deleteCategory('${cat.id}', event)" class="p-1 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition" title="Удалить раздел">
+                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                list.appendChild(btn);
+            });
+        }
+
+        // Выбор раздела из списка боковой панели
+        function selectCategory(id) {
+            state.selectedCategory = id;
+            renderCategories();
+            renderTasks();
+        }
+
+        // Заполнение селекта раздела для блока многострочного ввода
+        function populateTargetCategorySelect() {
+            const select = document.getElementById('target-category-select');
+            select.innerHTML = '';
+
+            state.categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.id;
+                opt.innerText = cat.name;
+                select.appendChild(opt);
+            });
+        }
+
+        // --- Отображение списка задач ---
+        function renderTasks() {
+            const activeContainer = document.getElementById('active-tasks-container');
+            const completedContainer = document.getElementById('completed-tasks-container');
+            const emptyState = document.getElementById('empty-state');
+            const transferBtnContainer = document.getElementById('transfer-btn-container');
+
+            // Обновление названия текущего раздела на экране
+            const currentCatObj = state.categories.find(c => c.id === state.selectedCategory);
+            document.getElementById('current-category-title').innerText = currentCatObj ? currentCatObj.name : 'Все разделы';
+
+            // Фильтрация задач по выбранной категории
+            const categoryFiltered = state.tasks.filter(t => 
+                state.selectedCategory === 'all' || t.categoryId === state.selectedCategory
+            );
+
+            // Разделение на активные и исполненные
+            const activeTasks = categoryFiltered.filter(t => !t.isCompleted);
+            const completedTasks = categoryFiltered.filter(t => t.isCompleted);
+
+            // Обновление бейджей количества
+            document.getElementById('active-badge').innerText = activeTasks.length;
+            document.getElementById('completed-badge').innerText = completedTasks.length;
+
+            const currentList = state.activeTab === 'active' ? activeTasks : completedTasks;
+            document.getElementById('filtered-count-badge').innerText = `Всего: ${currentList.length}`;
+
+            // Проверка на наличие отмеченных галочкой дел, готовых к архивации
+            const hasCheckedTasks = activeTasks.some(t => t.checked);
+            if (hasCheckedTasks && state.activeTab === 'active') {
+                transferBtnContainer.classList.remove('hidden');
+            } else {
+                transferBtnContainer.classList.add('hidden');
+            }
+
+            // Рендер Активных задач
+            activeContainer.innerHTML = '';
+            activeTasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = `p-3.5 app-card border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:border-indigo-300 ${task.checked ? 'app-subtle opacity-90' : ''}`;
+                
+                // Подготовка списка опций категорий для каждой карточки задачи
+                const userCategories = state.categories.filter(c => !c.isSystem);
+                const optionsHtml = userCategories.map(c => 
+                    `<option value="${c.id}" ${task.categoryId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+                ).join('');
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <button onclick="toggleTaskCheck('${task.id}')" class="w-6 h-6 rounded-lg border ${task.checked ? 'bg-indigo-600 border-indigo-600 text-white' : 'app-border hover:border-indigo-500'} flex items-center justify-center flex-shrink-0 transition-colors">
+                            ${task.checked ? '<i class="fa-solid fa-check text-xs"></i>' : ''}
+                        </button>
+                        <span class="text-sm ${task.checked ? 'line-through text-slate-400 dark:text-slate-500' : 'app-text'} truncate select-none">
+                            ${escapeHtml(task.text)}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 app-border">
+                        <!-- Изменение раздела прямо из задачи -->
+                        <select onchange="changeTaskCategory('${task.id}', this.value)" class="text-[11px] p-1.5 rounded-lg border app-border app-subtle app-text outline-none cursor-pointer">
+                            ${optionsHtml}
+                        </select>
+
+                        <button onclick="deleteTask('${task.id}')" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition" title="Удалить задачу">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                activeContainer.appendChild(item);
+            });
+
+            // Рендер Исполненных задач
+            completedContainer.innerHTML = '';
+            completedTasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = "p-3.5 app-subtle border app-border rounded-2xl flex items-center justify-between gap-3 opacity-75";
+                
+                const taskCat = state.categories.find(c => c.id === task.categoryId);
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-check text-xs"></i>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-sm line-through text-slate-400 dark:text-slate-500 truncate">
+                                ${escapeHtml(task.text)}
+                            </span>
+                            <span class="text-[10px] app-text-muted">
+                                Раздел: ${taskCat ? escapeHtml(taskCat.name) : 'Покупки'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="restoreTask('${task.id}')" class="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg transition text-xs flex items-center gap-1" title="Вернуть в активные">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                        <button onclick="deleteTask('${task.id}')" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition" title="Удалить навсегда">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                completedContainer.appendChild(item);
+            });
+
+            // Отображение состояния, если список пуст
+            if (currentList.length === 0) {
+                emptyState.classList.remove('hidden');
+                if (state.activeTab === 'completed') {
+                    document.getElementById('empty-state-title').innerText = "В этом разделе нет исполненных дел";
+                    document.getElementById('empty-state-desc').innerText = "Отмечайте галочками активные задачи и переносите их сюда";
+                } else {
+                    document.getElementById('empty-state-title').innerText = "Список активных дел пуст";
+                    document.getElementById('empty-state-desc').innerText = "Введите задачи в поле ввода выше и нажмите «Перенести в список»";
+                }
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
+
+        // --- Настройки темы, яркости и контрастности ---
         function toggleSettingsModal() {
             const modal = document.getElementById('settings-modal');
             if (modal.classList.contains('hidden')) {
@@ -544,39 +807,45 @@
             saveToLocalStorage();
         }
 
-        function setAccentColor(color) {
-            state.settings.accentColor = color;
-            applySettings();
-            saveToLocalStorage();
-        }
-
         function updateSettings() {
             const fontSelect = document.getElementById('font-size-select');
+            const brightnessRange = document.getElementById('brightness-range');
+            const contrastRange = document.getElementById('contrast-range');
+
             state.settings.fontSize = fontSelect.value;
+            state.settings.brightness = brightnessRange.value;
+            state.settings.contrast = contrastRange.value;
+
             applySettings();
             saveToLocalStorage();
         }
 
         function applySettings() {
             const body = document.getElementById('app-body');
+            const root = document.getElementById('app-root');
             const fontSelect = document.getElementById('font-size-select');
-            
-            if (fontSelect) fontSelect.value = state.settings.fontSize;
+            const brightnessRange = document.getElementById('brightness-range');
+            const contrastRange = document.getElementById('contrast-range');
 
-            // Шрифт
+            // Установка выбранной темы в классы <body>
+            body.className = `theme-${state.settings.theme} app-bg app-text min-h-screen font-sans flex flex-col antialiased`;
+
+            // Установка шрифта
+            if (fontSelect) fontSelect.value = state.settings.fontSize;
             body.style.fontSize = `${state.settings.fontSize}px`;
 
-            // Темная / Светлая тема
-            if (state.settings.theme === 'dark') {
-                body.classList.remove('bg-slate-100', 'text-slate-800');
-                body.classList.add('bg-slate-900', 'text-slate-100');
-            } else {
-                body.classList.remove('bg-slate-900', 'text-slate-100');
-                body.classList.add('bg-slate-100', 'text-slate-800');
-            }
+            // Установка Brightness / Contrast
+            if (brightnessRange) brightnessRange.value = state.settings.brightness;
+            if (contrastRange) contrastRange.value = state.settings.contrast;
+
+            document.getElementById('brightness-val').innerText = `${state.settings.brightness}%`;
+            document.getElementById('contrast-val').innerText = `${state.settings.contrast}%`;
+
+            root.style.setProperty('--app-brightness', `${state.settings.brightness}%`);
+            root.style.setProperty('--app-contrast', `${state.settings.contrast}%`);
         }
 
-        // Экранирование строк для безопасности
+        // Вспомогательное безопасное экранирование текста
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.innerText = text;
