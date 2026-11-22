@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Планер</title>
+<title>Ежедневник</title>
 <meta name="theme-color" content="#4f46e5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Планер">
+<meta name="apple-mobile-web-app-title" content="Ежедневник">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -207,7 +207,7 @@ hr.sep{border:0;border-top:1px solid var(--border);margin:1rem 0}
 
 <header class="top">
   <div class="grow">
-    <h1>Планер</h1>
+    <h1>Ежедневник</h1>
     <div class="sub" id="todayLbl"></div>
   </div>
   <button class="ibtn" id="btnSearch" title="Поиск"></button>
@@ -847,12 +847,12 @@ function openSettings(){
 }
 
 async function exportData(){
-  const name = `planner-backup-${todayStr()}.json`;
+  const name = `ezhednevnik-backup-${todayStr()}.json`;
   const blob = new Blob([JSON.stringify(state,null,1)], {type:'application/json'});
   try {
     const file = new File([blob], name, {type:'application/json'});
     if (navigator.canShare && navigator.canShare({files:[file]}) && /iPhone|iPad|Android/i.test(navigator.userAgent)){
-      await navigator.share({files:[file], title:'Резервная копия планера'}); return;
+      await navigator.share({files:[file], title:'Резервная копия ежедневника'}); return;
     }
   } catch(e){ if (e && e.name==='AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
@@ -862,7 +862,7 @@ async function exportData(){
 function importFile(file){
   const r = new FileReader();
   r.onload = ()=>{
-    let p; try { p = JSON.parse(r.result); } catch(e){ toast('Это не файл копии планера'); return; }
+    let p; try { p = JSON.parse(r.result); } catch(e){ toast('Это не файл копии ежедневника'); return; }
     if (!p || !Array.isArray(p.tasks)){ toast('В файле нет списка дел'); return; }
     openSheet(`<h3>${ic('ul')} Загрузка копии</h3>
       <p class="note">В файле: дел — ${p.tasks.length}, разделов — ${(p.categories||[]).filter(c=>!c.isSystem).length}.<br>Сейчас на устройстве: дел — ${state.tasks.length}.</p>
