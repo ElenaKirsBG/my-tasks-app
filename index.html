@@ -70,7 +70,7 @@ svg{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-lin
 
 /* ===== Вкладки и разделы ===== */
 .tabs{display:flex;background:var(--subtle);border-radius:12px;padding:3px;gap:2px;margin-bottom:.45rem}
-.tab{flex:1;font-size:.78rem;font-weight:600;padding:.42rem .2rem;border-radius:9px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:.3rem;white-space:nowrap}
+.tab{flex:1 1 auto;min-width:0;font-size:.76rem;font-weight:600;padding:.42rem .2rem;border-radius:9px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:.3rem;white-space:nowrap}
 .tab.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .tab b{font-size:.68rem;font-weight:700;background:var(--soft);color:var(--accent);padding:0 .35rem;border-radius:6px;line-height:1.35}
 .chips{display:flex;gap:.35rem;overflow-x:auto;padding:.05rem 0 .5rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -452,6 +452,8 @@ function restore(id){
   t.isCompleted=false; t.checked=false; delete t.completedAt; save(); render();
 }
 function delTask(id){
+  const x = state.tasks.find(t=>t.id===id); if(!x) return;
+  if (x.isCompleted && !confirm(`Удалить навсегда исполненное дело «${x.text}»?`)) return;
   snapshot(); state.tasks = state.tasks.filter(t=>t.id!==id); save(); render(); toast('Дело удалено', true);
 }
 function moveOverdueToday(){
@@ -546,7 +548,7 @@ function renderChips(){
   $('#chips').innerHTML = h;
 }
 
-const VIEWS = [['day','День'],['all','Все дела'],['nodate','Без даты'],['done','Готово']];
+const VIEWS = [['day','День'],['all','Все дела'],['nodate','Без даты'],['done','Исполненные']];
 function renderTabs(){
   const a = active().filter(catOk);
   const counts = { day: a.filter(t=>t.date===ui.date).length, all: a.length, nodate: a.filter(t=>!t.date).length,
