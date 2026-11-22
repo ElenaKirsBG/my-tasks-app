@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Ежедневник</title>
-<meta name="theme-color" content="#4f46e5">
+<meta name="theme-color" content="#f4f6fa">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Ежедневник">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>
 /* ===== Темы ===== */
@@ -808,6 +808,7 @@ function openCats(){
 function openSettings(){
   const s = state.settings;
   const themes = [['light','Светлая','#f4f6fa'],['dark','Тёмная','#0b1120'],['pastel','Пастельная','#fbf4ee'],['cyberpunk','Киберпанк','#ff007f'],['minimal','Минимализм','#fff']];
+  const otherSites = SITES.filter(([,u])=>!u.startsWith(location.origin));
   const hasBackup = (()=>{ try{ return !!localStorage.getItem(BACKUP_KEY); }catch(e){ return false; } })();
   openSheet(`<h3>${ic('gear')} Настройки</h3>
     <div class="fld"><span class="lbl">Тема</span><div class="themes" id="sTheme">${themes.map(([k,n,c])=>`<button data-t="${k}" class="${s.theme===k?'on':''}"><i style="background:${c}"></i>${n}</button>`).join('')}</div></div>
@@ -823,6 +824,9 @@ function openSettings(){
     <p class="note">Дела хранятся только в памяти этого устройства (в браузере). Время от времени сохраняйте копию в файл — по ней можно всё восстановить или перенести на другой телефон/компьютер.</p>
     <div class="btns"><button class="btn" id="bExp">${ic('dl')} Сохранить в файл</button><button class="btn" id="bImp">${ic('ul')} Загрузить из файла</button></div>
     <input type="file" id="fImp" accept="application/json,.json" hidden>
+    ${otherSites.length?`<hr class="sep"><span class="lbl">Перенести дела на сайт</span>
+      <p class="note">Откроется «Ежедневник» на сайте, и все дела, разделы и настройки сразу перейдут туда (нужно быть вошедшей в «Мой кабинет»). Здесь ничего не удаляется. Если на новом месте дел не окажется — перенесите их файлом копии.</p>
+      <div class="list-opt" id="bTr" style="margin-top:.4rem">${otherSites.map(([n,u],i)=>`<button class="opt" data-i="${i}">${ic('arrowR')} ${esc(n)}</button>`).join('')}</div>`:''}
     ${hasBackup?`<button class="btn" id="bOld" style="width:100%;margin-top:.5rem">${ic('undo')} Восстановить копию, сделанную при обновлении</button>`:''}
     <p class="note" style="margin-top:.8rem">Всего дел: ${state.tasks.length} · активных: ${active().length} · разделов: ${userCats().length}</p>`, b=>{
     const segSync = (sel,val)=> b.querySelectorAll(sel+' button').forEach(x=>x.classList.toggle('on', x.dataset.v===String(val)));
@@ -837,6 +841,7 @@ function openSettings(){
     b.querySelector('#sBr').oninput = e=>{ s.brightness=e.target.value; b.querySelector('#vBr').textContent=s.brightness+'%'; upd(); };
     b.querySelector('#sCt').oninput = e=>{ s.contrast=e.target.value; b.querySelector('#vCt').textContent=s.contrast+'%'; upd(); };
     b.querySelector('#bExp').onclick = exportData;
+    const tr = b.querySelector('#bTr'); if (tr) tr.onclick = e=>{ const o=e.target.closest('[data-i]'); if(o) transferTo(otherSites[+o.dataset.i][1]); };
     b.querySelector('#bImp').onclick = ()=> b.querySelector('#fImp').click();
     b.querySelector('#fImp').onchange = e=>{ const f=e.target.files[0]; if(f) importFile(f); };
     const bo = b.querySelector('#bOld'); if (bo) bo.onclick = ()=>{
@@ -846,6 +851,25 @@ function openSettings(){
       catch(err){ toast('Не удалось восстановить копию'); }
     };
   });
+}
+
+/* ===================== Перенос на другой адрес ===================== */
+const SITES = [
+  ['elenakirsanova.com', 'https://elenakirsanova.com/my/ezhednevnik/'],
+  ['elenakirsanova.su — для России, без VPN', 'https://elenakirsanova.su/my/ezhednevnik/']
+];
+function b64e(str){ const b = new TextEncoder().encode(str); let bin=''; for(let i=0;i<b.length;i+=0x8000) bin += String.fromCharCode.apply(null, b.subarray(i,i+0x8000));
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64d(s){ s = s.replace(/-/g,'+').replace(/_/g,'/'); const bin = atob(s); return new TextDecoder().decode(Uint8Array.from(bin, c=>c.charCodeAt(0))); }
+function transferTo(url){
+  const payload = b64e(JSON.stringify({app:'ezhednevnik', at:new Date().toISOString(), tasks:state.tasks, categories:state.categories, settings:state.settings}));
+  window.open(url + '#transfer=' + payload, '_blank', 'noopener') || (location.href = url + '#transfer=' + payload);
+}
+function checkTransfer(){
+  const m = location.hash.match(/^#transfer=([A-Za-z0-9_-]+)$/); if(!m) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  try { const p = JSON.parse(b64d(m[1])); if (p && Array.isArray(p.tasks)) askImport(p, 'Перенос дел с другого адреса'); }
+  catch(e){ toast('Ссылка переноса повреждена — воспользуйтесь резервной копией-файлом'); }
 }
 
 async function exportData(){
@@ -866,11 +890,16 @@ function importFile(file){
   r.onload = ()=>{
     let p; try { p = JSON.parse(r.result); } catch(e){ toast('Это не файл копии ежедневника'); return; }
     if (!p || !Array.isArray(p.tasks)){ toast('В файле нет списка дел'); return; }
-    openSheet(`<h3>${ic('ul')} Загрузка копии</h3>
-      <p class="note">В файле: дел — ${p.tasks.length}, разделов — ${(p.categories||[]).filter(c=>!c.isSystem).length}.<br>Сейчас на устройстве: дел — ${state.tasks.length}.</p>
+    askImport(p, 'Загрузка копии');
+  };
+  r.readAsText(file);
+}
+function askImport(p, title){
+    openSheet(`<h3>${ic('ul')} ${esc(title)}</h3>
+      <p class="note">Пришло: дел — ${p.tasks.length}, разделов — ${(p.categories||[]).filter(c=>!c.isSystem).length}.<br>Сейчас на устройстве: дел — ${state.tasks.length}.</p>
       <div class="list-opt" style="margin-top:.6rem">
         <button class="opt" id="iMerge">${ic('plus')} Объединить — добавить недостающие дела и разделы</button>
-        <button class="opt" id="iRepl" style="color:var(--danger)">${ic('undo')} Заменить всё содержимым файла</button>
+        <button class="opt" id="iRepl" style="color:var(--danger)">${ic('undo')} Заменить всё — оставить только пришедшие дела</button>
       </div>
       <p class="note" style="margin-top:.6rem">Перед загрузкой текущие данные автоматически сохраняются отдельно.</p>`, b=>{
       const pre = ()=>{ try{ localStorage.setItem(IMPORT_BACKUP_KEY, JSON.stringify(state)); }catch(e){} };
@@ -882,8 +911,6 @@ function importFile(file){
       b.querySelector('#iRepl').onclick = ()=>{ if(!confirm('Точно заменить все текущие дела содержимым файла?')) return; pre();
         state = {...state, ...p, settings:{...DEF_SETTINGS, ...(p.settings||{})}}; normalize(); save(); applySettings(); closeSheet(); render(); toast('Данные загружены'); };
     });
-  };
-  r.readAsText(file);
 }
 
 /* ===================== Уведомления ===================== */
@@ -965,7 +992,8 @@ function bind(){
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && todayStr()!==lastDay){ if(ui.date===lastDay) ui.date=todayStr(); lastDay=todayStr(); render(); } });
 }
 
-load(); applySettings(); bind(); autoGrow(); render();
+load(); applySettings(); bind(); autoGrow(); render(); checkTransfer();
+window.addEventListener('hashchange', checkTransfer);
 if ('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
