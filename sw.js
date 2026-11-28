@@ -1,7 +1,7 @@
 /* «Ежедневник» — работа без интернета. Страница берётся из сети (обновления приходят сразу),
    без связи — из кэша. В кэш попадают только нормальные ответы (не страница входа, не перенаправления).
    Дела здесь не хранятся и не трогаются: они лежат в памяти браузера. */
-const V = 'ezhednevnik-1.3.0';
+const V = 'ezhednevnik-1.4.0';
 const CORE = ['./', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 const good = r => r && r.ok && !r.redirected && r.type !== 'opaqueredirect';
 async function put(key, res) { try { if (good(res)) await (await caches.open(V)).put(key, res); } catch (e) {} }
@@ -22,4 +22,25 @@ self.addEventListener('fetch', e => {
     return;
   }
   e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => { put(req, res.clone()); return res; })));
+});
+
+/* пуш-напоминание с сервера (приложение может быть закрыто) */
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (er) { d = { title: 'Ежедневник', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Ежедневник', {
+    body: d.body || '', tag: d.tag || 'diary', renotify: true,
+    icon: 'icon-192.png', badge: 'icon-192.png', vibrate: [200, 100, 200], data: { d: d.d || '' }
+  }));
+});
+/* нажатие на уведомление — открыть «Ежедневник» на нужном дне */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const day = (e.notification.data || {}).d || '', scope = self.registration.scope;
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const c = all.find(w => w.url.startsWith(scope));
+    if (c) { await c.focus(); if (day) c.postMessage({ openDay: day }); return; }
+    await self.clients.openWindow(scope + (day ? '?d=' + day : ''));
+  })());
 });
